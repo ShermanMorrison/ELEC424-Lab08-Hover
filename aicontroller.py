@@ -77,7 +77,7 @@ class AiController():
 
         # ---AI tuning variables---
         # This is the thrust of the motors duing hover.  0.5 reaches ~1ft depending on battery
-        self.maxThrust = 0.30
+        self.maxThrust = 0.60
         # Determines how fast to take off
         self.thrustInc = 0.021
         self.takeoffTime = 0.5
@@ -112,7 +112,7 @@ class AiController():
             'sensorfusion6.ki': 0.00200000009499, 
             'imu_acc_lpf.factor': 32 }
 
-    def readInput(self):
+    def read_input(self):
         """Read input from the selected device."""
 
         # First we read data from controller as normal
@@ -121,6 +121,7 @@ class AiController():
         # save this value.
         self.data["pitchcal"] = 0.0
         self.data["rollcal"] = 0.0
+        self.data["althold"] = False
         for e in pygame.event.get():
           if e.type == pygame.locals.JOYAXISMOTION:
             index = "Input.AXIS-%d" % e.axis 
@@ -197,7 +198,7 @@ class AiController():
             self.timer1 = -self.repeatDelay
             thrustDelta = 0
             # Example Call to pidTuner
-            pidTuner()
+            #pidTuner()
 
 
         self.addThrust( thrustDelta )
@@ -228,7 +229,7 @@ class AiController():
 
 
     # ELEC424 TODO: Implement this function
-    def pidTuner():
+    def pidTuner(self):
         """ 
         example on how to update crazyflie params
         """
