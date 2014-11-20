@@ -64,6 +64,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class AiController():
     """Used for reading data from input devices using the PyGame API."""
     def __init__(self,cf):
@@ -85,26 +86,26 @@ class AiController():
         self.thrustDec = -0.019
         self.hoverTime = 1
         # Sets the delay between test flights
-        self.repeatDelay = 2
+        self.repeatDelay = 5
 
         # parameters pulled from json with defaults from crazyflie pid.h
         # perl -ne '/"(\w*)": {/ && print $1,  "\n" ' lib/cflib/cache/27A2C4BA.json
         self.cfParams = {
-            'pid_rate.pitch_kp': 70.0, 
+            'pid_rate.pitch_kp': 0.0, 
             'pid_rate.pitch_kd': 0.0, 
             'pid_rate.pitch_ki': 0.0, 
-            'pid_rate.roll_kp': 70.0, 
+            'pid_rate.roll_kp': 0.0, 
             'pid_rate.roll_kd': 0.0, 
             'pid_rate.roll_ki': 0.0, 
-            'pid_rate.yaw_kp': 50.0, 
+            'pid_rate.yaw_kp': 0.0, 
             'pid_rate.yaw_kd': 0.0, 
-            'pid_rate.yaw_ki': 25.0, 
-            'pid_attitude.pitch_kp': 3.5, 
+            'pid_rate.yaw_ki': 5.0, 
+            'pid_attitude.pitch_kp': 0.0, 
             'pid_attitude.pitch_kd': 0.0, 
-            'pid_attitude.pitch_ki': 2.0, 
-            'pid_attitude.roll_kp': 3.5, 
+            'pid_attitude.pitch_ki': 0.0, 
+            'pid_attitude.roll_kp': 0.0, 
             'pid_attitude.roll_kd': 0.0, 
-            'pid_attitude.roll_ki': 2.0, 
+            'pid_attitude.roll_ki': 0.0, 
             'pid_attitude.yaw_kp': 0.0, 
             'pid_attitude.yaw_kd': 0.0, 
             'pid_attitude.yaw_ki': 0.0, 
@@ -119,6 +120,7 @@ class AiController():
         # ----------------------------------------------------
         # We only want the pitch/roll cal to be "oneshot", don't
         # save this value.
+        error = {"pos_error": 0.0, "neg_error":0.0, "magnitude_error":0.0}
         self.data["pitchcal"] = 0.0
         self.data["rollcal"] = 0.0
         self.data["althold"] = False
@@ -157,14 +159,14 @@ class AiController():
         # Second if AI is enabled overwrite selected data with AI
         # ----------------------------------------------------------
         if self.data["exit"]:
-            self.augmentInputWithAi()
+            self.augmentInputWithAi(error)
 
         # Return control Data
         return self.data
 
 
     # ELEC424 TODO:  Improve this function as needed
-    def augmentInputWithAi(self):
+    def augmentInputWithAi(self, error):
         """
         Overrides the throttle input with a controlled takeoff, hover, and land loop.
         You will to adjust the tuning vaiables according to your crazyflie.  
@@ -172,15 +174,34 @@ class AiController():
         I have found that a value  of 0.5 will reach about 1ft off the ground 
         depending on the battery's charge.
         """
-
         # Keep track of time
         currentTime = time.time()
         timeSinceLastAi = currentTime - self.lastTime
         self.timer1 = self.timer1 + timeSinceLastAi
         self.lastTime = currentTime
         
+        # Take measurements of error every time this function is called
+
+        # total error will sum deviation in roll, pitch, and yaw    
+        if (self.aidata["roll"] > 0):
+            error["pos_error"] += self.aidata["roll"]
+        else:
+            error["neg_error"] += self.aidata["roll"]
+
+        if (self.aidata["pitch"] > 0):
+            error["pos_error"] += self.aidata["pitch"]
+        else: 
+            error["neg_error"] += self.aidata["roll"]
+        if (self.aidata["yaw"] > 0):
+            error["pos_error"] += self.aidata["yaw"] 
+        else: 
+            error["neg_error"] += self.aidata["yaw"]
+
         # Basic AutoPilot steadly increase thrust, hover, land and repeat
         # -------------------------------------------------------------
+       
+        self.addThrust( thrustDelta )
+        
         # delay before takeoff 
         if self.timer1 < 0:
             thrustDelta = 0
@@ -198,11 +219,7 @@ class AiController():
             self.timer1 = -self.repeatDelay
             thrustDelta = 0
             # Example Call to pidTuner
-            #pidTuner()
-
-
-        self.addThrust( thrustDelta )
-
+            pidTuner(error)
 
         # override Other inputs as needed
         # --------------------------------------------------------------
@@ -229,28 +246,21 @@ class AiController():
 
 
     # ELEC424 TODO: Implement this function
-    def pidTuner(self):
+    def pidTuner(self, error):
         """ 
-        example on how to update crazyflie params
+        iterates through a parameter, adjusting every time and printing out error
         """
+        error["magnitude_error"] = error["pos_error"] + error["neg_error"]
+         
+        print "Magnitude of error was: "+str(error["magnitude_error"]) + ", Positive error was: " + str(error["pos_error"])+ ", Negative error was: "+str(error["neg_error"])
+        
         self.cfParams['pid_rate.yaw_kp'] = self.cfParams['pid_rate.yaw_kp'] + 1
         self.updateCrazyFlieParam('pid_rate.yaw_kp')
+
 
     # update via param.py -> radiodriver.py -> crazyradio.py -> usbRadio )))
     def updateCrazyFlieParam(self, completename ):
         self.cf.param.set_value( unicode(completename), str(self.cfParams[completename]) )
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
