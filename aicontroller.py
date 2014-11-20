@@ -62,13 +62,19 @@ from pygame.locals import *
 import time
 import logging
 
+
 logger = logging.getLogger(__name__)
 
 
 class AiController():
     """Used for reading data from input devices using the PyGame API."""
     def __init__(self,cf):
-        self.cf = cf
+
+
+        self.cf = cf 
+		self.actualRoll = 0
+		self.actualPitch = 0
+		self.actualYaw = 0
         self.inputMap = None
         pygame.init()
 
@@ -120,7 +126,7 @@ class AiController():
         # ----------------------------------------------------
         # We only want the pitch/roll cal to be "oneshot", don't
         # save this value.
-        error = {"pos_error": 0.0, "neg_error":0.0, "magnitude_error":0.0}
+        error = 0
         self.data["pitchcal"] = 0.0
         self.data["rollcal"] = 0.0
         self.data["althold"] = False
@@ -183,19 +189,20 @@ class AiController():
         # Take measurements of error every time this function is called
 
         # total error will sum deviation in roll, pitch, and yaw    
-        if (self.aidata["roll"] > 0):
-            error["pos_error"] += self.aidata["roll"]
-        else:
-            error["neg_error"] += self.aidata["roll"]
+        
+       	 
+        error += self.actualRoll * self.actualRoll + self.actualPitch * self.actualPitch + self.actualYaw * self.actualYaw
 
-        if (self.aidata["pitch"] > 0):
-            error["pos_error"] += self.aidata["pitch"]
-        else: 
-            error["neg_error"] += self.aidata["roll"]
-        if (self.aidata["yaw"] > 0):
-            error["pos_error"] += self.aidata["yaw"] 
-        else: 
-            error["neg_error"] += self.aidata["yaw"]
+        print error
+
+        #if (self.aidata["pitch"] > 0):
+        #    error["pos_error"] += self.aidata["pitch"]
+        #else: 
+        #    error["neg_error"] += self.aidata["roll"]
+        #if (self.aidata["yaw"] > 0):
+        #    error["pos_error"] += self.aidata["yaw"] 
+        #else: 
+        #    error["neg_error"] += self.aidata["yaw"]
 
         # Basic AutoPilot steadly increase thrust, hover, land and repeat
         # -------------------------------------------------------------
@@ -219,7 +226,8 @@ class AiController():
             self.timer1 = -self.repeatDelay
             thrustDelta = 0
             # Example Call to pidTuner
-            pidTuner(error)
+            self.pidTuner(error)
+			error = 0
 
         # override Other inputs as needed
         # --------------------------------------------------------------
@@ -309,4 +317,10 @@ class AiController():
             j = pygame.joystick.Joystick(i)
             dev.append({"id":i, "name" : j.get_name()})
         return dev
+
+	def setActualData(self, actualRoll, actualPitch, actualThrust){
+		self.actualRoll = actualRoll
+		self.actualPitch = actualPitch
+		self.actualThrust = actualThrust
+	}
 
