@@ -91,15 +91,15 @@ class AiController():
         # parameters pulled from json with defaults from crazyflie pid.h
         # perl -ne '/"(\w*)": {/ && print $1,  "\n" ' lib/cflib/cache/27A2C4BA.json
         self.cfParams = {
-            'pid_rate.pitch_kp': 0.0, 
+            'pid_rate.pitch_kp': 70.0, 
             'pid_rate.pitch_kd': 0.0, 
             'pid_rate.pitch_ki': 0.0, 
-            'pid_rate.roll_kp': 0.0, 
+            'pid_rate.roll_kp': 70.0, 
             'pid_rate.roll_kd': 0.0, 
             'pid_rate.roll_ki': 0.0, 
-            'pid_rate.yaw_kp': 0.0, 
+            'pid_rate.yaw_kp': 50.0, 
             'pid_rate.yaw_kd': 0.0, 
-            'pid_rate.yaw_ki': 5.0, 
+            'pid_rate.yaw_ki': 0.0, 
             'pid_attitude.pitch_kp': 0.0, 
             'pid_attitude.pitch_kd': 0.0, 
             'pid_attitude.pitch_ki': 0.0, 
@@ -207,7 +207,7 @@ class AiController():
             thrustDelta = 0
         # takeoff
         elif self.timer1 < self.takeoffTime :
-            thrustDelta = self.thrustInc
+            thrustDelta = self.thr`ustInc
         # hold
         elif self.timer1 < self.takeoffTime + self.hoverTime : 
             thrustDelta = 0
