@@ -70,8 +70,14 @@ class AiController():
     """Used for reading data from input devices using the PyGame API."""
     def __init__(self,cf):
 
-    self.gainToChange = "pid_rate.pitch_kp" 
-    self.lastError = float("inf")
+        self.gainToChange = "pid_rate.roll_kp" 
+        self.lastError = float("inf")
+	
+
+	self.errorList = []
+	self.kpList = []
+	
+	self.bestRPY = []
 
         self.cf = cf 
 	self.actualRoll = 0
@@ -87,33 +93,33 @@ class AiController():
 
         # ---AI tuning variables---
         # This is the thrust of the motors duing hover.  0.5 reaches ~1ft depending on battery
-        self.maxThrust = 0.60
+        self.maxThrust = 0.85
         # Determines how fast to take off
-        self.thrustInc = 0.021
-        self.takeoffTime = 0.5
+        self.thrustInc = 0.02
+        self.takeoffTime = 5
         # Determines how fast to land
-        self.thrustDec = -0.019
-        self.hoverTime = 1
+        self.thrustDec = -0.039
+        self.hoverTime = 3
         # Sets the delay between test flights
-        self.repeatDelay = 5
+        self.repeatDelay = 8
 
         # parameters pulled from json with defaults from crazyflie pid.h
         # perl -ne '/"(\w*)": {/ && print $1,  "\n" ' lib/cflib/cache/27A2C4BA.json
         self.cfParams = {
-            'pid_rate.pitch_kp': 70.0, 
+            'pid_rate.pitch_kp': 90.0, 
             'pid_rate.pitch_kd': 0.0, 
-            'pid_rate.pitch_ki': 0.0, 
-            'pid_rate.roll_kp': 60.0, 
+            'pid_rate.pitch_ki': 15.0, 
+            'pid_rate.roll_kp': 100.0, 
             'pid_rate.roll_kd': 0.0, 
-            'pid_rate.roll_ki': 0.0, 
+            'pid_rate.roll_ki': 15.0, 
             'pid_rate.yaw_kp': 50.0, 
-            'pid_rate.yaw_kd': 0.0, 
-            'pid_rate.yaw_ki': 0.0, 
-            'pid_attitude.pitch_kp': 0.0, 
-            'pid_attitude.pitch_kd': 0.0, 
+            'pid_rate.yaw_kd': 23.0, 
+            'pid_rate.yaw_ki': 2.0, 
+            'pid_attitude.pitch_kp': 3.5, 
+            'pid_attitude.pitch_kd': 2.0, 
             'pid_attitude.pitch_ki': 0.0, 
-            'pid_attitude.roll_kp': 0.0, 
-            'pid_attitude.roll_kd': 0.0, 
+            'pid_attitude.roll_kp': 3.5, 
+            'pid_attitude.roll_kd': 2.0, 
             'pid_attitude.roll_ki': 0.0, 
             'pid_attitude.yaw_kp': 0.0, 
             'pid_attitude.yaw_kd': 0.0, 
@@ -220,17 +226,33 @@ class AiController():
             # Example Call to pidTuner
             print "Magnitude of error was: "+str(self.error)
             print "\t with " + self.gainToChange + " = " + str(self.cfParams[self.gainToChange])
+	    # 
+	    if len(self.errorList) < 7:
+                self.pidTuner() # update self.gainToChange param
+	        self.errorList.append(self.error)
+		self.kpList.append(self.cfParams[self.gainToChange])
+	        self.lastError = self.error
+	    else:
+		indexOfMin = 0
+		lowestErr = self.errorList[0]
+		for i in xrange(1,len(self.errorList)):
+		    if self.errorList[i] < lowestErr:
+                        indexOfMin = i
+			lowestErr = self.errorList[i]
 
-			# error has improved
-			if self.error < self.lastError:
-            	self.pidTuner() # update self.gainToChange param
-			else:
+		self.cfParams[self.gainToChange] = self.kpList[indexOfMin]
+		self.updateCrazyFlieParam(self.gainToChange)	
+		self.bestRPY.append(self.kpList[indexOfMin])
+		print "BEST Kp for " + str(self.gainToChange) + " = " + str(self.kpList[indexOfMin])
+
+		self.errorList = []
                 if self.gainToChange == "pid_rate.pitch_kp":
                     self.gainToChange = "pid_rate.roll_kp"
-                else:
-                	self.gainToChange = "pid_rate.yaw_kp"
-
-		self.lastError = self.error
+                elif self.gainToChange == "pid_rate.roll_kp":
+                    self.gainToChange = "pid_rate.yaw_kp"
+		else:
+		    print "best RPY = " + str(self.bestRPY)
+	    self.thrust = self.maxThrust + 0.02	
 	    self.error = 0
 		
         self.addThrust( thrustDelta )
@@ -264,8 +286,8 @@ class AiController():
         """ 
         iterates through a parameter, adjusting every time and printing out error
         """      
-        self.cfParams['pid_rate.roll_kp'] = self.cfParams['pid_rate.roll_kp'] + 5
-        self.updateCrazyFlieParam('pid_rate.roll_kp')
+        self.cfParams[self.gainToChange] = self.cfParams[self.gainToChange] + 10
+        self.updateCrazyFlieParam(self.gainToChange)
 
 
     # update via param.py -> radiodriver.py -> crazyradio.py -> usbRadio )))
@@ -324,7 +346,4 @@ class AiController():
         self.actualRoll = actualRoll
 	self.actualPitch = actualPitch	
         self.actualThrust = actualThrust
- 		self.actualRoll = 0
-		self.actualPitch = 0
-		self.actualYaw = 0   
 

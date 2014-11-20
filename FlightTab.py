@@ -218,6 +218,8 @@ class FlightTab(Tab, flight_tab_class):
         
     def _imu_data_received(self, timestamp, data, logconf):
         if self.isVisible():
+            # We added this function and call in order to read the sensor data that goes into the gyroscope measurements
+            # to aid in our error measurement
             self.helper.inputDeviceReader.inputdevice.setActualData(data["stabilizer.roll"], data["stabilizer.pitch"], data["stabilizer.yaw"])
             self.actualRoll.setText(("%.2f" % data["stabilizer.roll"]))
             self.actualPitch.setText(("%.2f" % data["stabilizer.pitch"]))
