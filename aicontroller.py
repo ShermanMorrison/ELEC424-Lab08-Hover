@@ -70,6 +70,8 @@ class AiController():
     """Used for reading data from input devices using the PyGame API."""
     def __init__(self,cf):
 
+    self.gainToChange = "pid_rate.pitch_kp" 
+    self.lastError = float("inf")
 
         self.cf = cf 
 	self.actualRoll = 0
@@ -216,10 +218,21 @@ class AiController():
             self.timer1 = -self.repeatDelay
             thrustDelta = 0
             # Example Call to pidTuner
-            print "Magnitude of error was: "+str(self.error) 
-            self.pidTuner()
-	    error = 0
+            print "Magnitude of error was: "+str(self.error)
+            print "\t with " + self.gainToChange + " = " + str(self.cfParams[self.gainToChange])
 
+			# error has improved
+			if self.error < self.lastError:
+            	self.pidTuner() # update self.gainToChange param
+			else:
+                if self.gainToChange == "pid_rate.pitch_kp":
+                    self.gainToChange = "pid_rate.roll_kp"
+                else:
+                	self.gainToChange = "pid_rate.yaw_kp"
+
+		self.lastError = self.error
+	    self.error = 0
+		
         self.addThrust( thrustDelta )
         
         # override Other inputs as needed
@@ -250,8 +263,7 @@ class AiController():
     def pidTuner(self):
         """ 
         iterates through a parameter, adjusting every time and printing out error
-        """
-      
+        """      
         self.cfParams['pid_rate.roll_kp'] = self.cfParams['pid_rate.roll_kp'] + 5
         self.updateCrazyFlieParam('pid_rate.roll_kp')
 
@@ -312,5 +324,7 @@ class AiController():
         self.actualRoll = actualRoll
 	self.actualPitch = actualPitch	
         self.actualThrust = actualThrust
-    
+ 		self.actualRoll = 0
+		self.actualPitch = 0
+		self.actualYaw = 0   
 
