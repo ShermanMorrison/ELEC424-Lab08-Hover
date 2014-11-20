@@ -72,9 +72,10 @@ class AiController():
 
 
         self.cf = cf 
-		self.actualRoll = 0
-		self.actualPitch = 0
-		self.actualYaw = 0
+	self.actualRoll = 0
+	self.actualPitch = 0
+	self.actualYaw = 0
+        self.error = 0
         self.inputMap = None
         pygame.init()
 
@@ -100,7 +101,7 @@ class AiController():
             'pid_rate.pitch_kp': 70.0, 
             'pid_rate.pitch_kd': 0.0, 
             'pid_rate.pitch_ki': 0.0, 
-            'pid_rate.roll_kp': 70.0, 
+            'pid_rate.roll_kp': 60.0, 
             'pid_rate.roll_kd': 0.0, 
             'pid_rate.roll_ki': 0.0, 
             'pid_rate.yaw_kp': 50.0, 
@@ -126,7 +127,6 @@ class AiController():
         # ----------------------------------------------------
         # We only want the pitch/roll cal to be "oneshot", don't
         # save this value.
-        error = 0
         self.data["pitchcal"] = 0.0
         self.data["rollcal"] = 0.0
         self.data["althold"] = False
@@ -165,14 +165,14 @@ class AiController():
         # Second if AI is enabled overwrite selected data with AI
         # ----------------------------------------------------------
         if self.data["exit"]:
-            self.augmentInputWithAi(error)
+            self.augmentInputWithAi()
 
         # Return control Data
         return self.data
 
 
     # ELEC424 TODO:  Improve this function as needed
-    def augmentInputWithAi(self, error):
+    def augmentInputWithAi(self):
         """
         Overrides the throttle input with a controlled takeoff, hover, and land loop.
         You will to adjust the tuning vaiables according to your crazyflie.  
@@ -191,30 +191,20 @@ class AiController():
         # total error will sum deviation in roll, pitch, and yaw    
         
        	 
-        error += self.actualRoll * self.actualRoll + self.actualPitch * self.actualPitch + self.actualYaw * self.actualYaw
+        self.error += self.actualRoll * self.actualRoll + self.actualPitch * self.actualPitch + self.actualYaw * self.actualYaw
 
-        print error
-
-        #if (self.aidata["pitch"] > 0):
-        #    error["pos_error"] += self.aidata["pitch"]
-        #else: 
-        #    error["neg_error"] += self.aidata["roll"]
-        #if (self.aidata["yaw"] > 0):
-        #    error["pos_error"] += self.aidata["yaw"] 
-        #else: 
-        #    error["neg_error"] += self.aidata["yaw"]
 
         # Basic AutoPilot steadly increase thrust, hover, land and repeat
         # -------------------------------------------------------------
        
-        self.addThrust( thrustDelta )
+
         
         # delay before takeoff 
         if self.timer1 < 0:
             thrustDelta = 0
         # takeoff
         elif self.timer1 < self.takeoffTime :
-            thrustDelta = self.thr`ustInc
+            thrustDelta = self.thrustInc
         # hold
         elif self.timer1 < self.takeoffTime + self.hoverTime : 
             thrustDelta = 0
@@ -226,9 +216,12 @@ class AiController():
             self.timer1 = -self.repeatDelay
             thrustDelta = 0
             # Example Call to pidTuner
-            self.pidTuner(error)
-			error = 0
+            print "Magnitude of error was: "+str(self.error) 
+            self.pidTuner()
+	    error = 0
 
+        self.addThrust( thrustDelta )
+        
         # override Other inputs as needed
         # --------------------------------------------------------------
         # self.data["roll"] = self.aiData["roll"]
@@ -254,16 +247,13 @@ class AiController():
 
 
     # ELEC424 TODO: Implement this function
-    def pidTuner(self, error):
+    def pidTuner(self):
         """ 
         iterates through a parameter, adjusting every time and printing out error
         """
-        error["magnitude_error"] = error["pos_error"] + error["neg_error"]
-         
-        print "Magnitude of error was: "+str(error["magnitude_error"]) + ", Positive error was: " + str(error["pos_error"])+ ", Negative error was: "+str(error["neg_error"])
-        
-        self.cfParams['pid_rate.yaw_kp'] = self.cfParams['pid_rate.yaw_kp'] + 1
-        self.updateCrazyFlieParam('pid_rate.yaw_kp')
+      
+        self.cfParams['pid_rate.roll_kp'] = self.cfParams['pid_rate.roll_kp'] + 5
+        self.updateCrazyFlieParam('pid_rate.roll_kp')
 
 
     # update via param.py -> radiodriver.py -> crazyradio.py -> usbRadio )))
@@ -318,9 +308,9 @@ class AiController():
             dev.append({"id":i, "name" : j.get_name()})
         return dev
 
-	def setActualData(self, actualRoll, actualPitch, actualThrust){
-		self.actualRoll = actualRoll
-		self.actualPitch = actualPitch
-		self.actualThrust = actualThrust
-	}
+    def setActualData(self, actualRoll, actualPitch, actualThrust):
+        self.actualRoll = actualRoll
+	self.actualPitch = actualPitch	
+        self.actualThrust = actualThrust
+    
 
