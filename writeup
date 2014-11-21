@@ -3,8 +3,29 @@ Jonathan Wilson, Chase Stewart
 
 
 Final PID values:
-<PID values>
 
+self.cfParams = {
+    'pid_rate.pitch_kp': 90.0,
+    'pid_rate.pitch_kd': 0.0,
+    'pid_rate.pitch_ki': 15.0,
+    'pid_rate.roll_kp': 100.0,
+    'pid_rate.roll_kd': 0.0,
+    'pid_rate.roll_ki': 15.0,
+    'pid_rate.yaw_kp': 50.0,
+    'pid_rate.yaw_kd': 23.0,
+    'pid_rate.yaw_ki': 2.0,
+    'pid_attitude.pitch_kp': 3.5,
+    'pid_attitude.pitch_kd': 2.0,
+    'pid_attitude.pitch_ki': 0.0,
+    'pid_attitude.roll_kp': 3.5,
+    'pid_attitude.roll_kd': 2.0,
+    'pid_attitude.roll_ki': 0.0,
+    'pid_attitude.yaw_kp': 0.0,
+    'pid_attitude.yaw_kd': 0.0,
+    'pid_attitude.yaw_ki': 0.0,
+    'sensorfusion6.kp': 0.800000011921,
+    'sensorfusion6.ki': 0.00200000009499,
+    'imu_acc_lpf.factor': 32 }
 Changes to Code:
 
 
@@ -16,6 +37,6 @@ To set the ki and kd, we did some <CHASE MAGIC>.
 <What interface does the controller signal use to determine motor thrust?>
 
 
-Jonathan Wilson: 50
-Chase Stewart: 50
+Jonathan Wilson: 50%
+Chase E. Stewart: 50%
 

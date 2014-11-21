@@ -1,0 +1,30 @@
+Lab07: PID tuning
+Chase E Stewart and Jonathan Wilson
+
+Chase E Stewart: 50%
+Jonathan: 50%
+
+
+        self.cfParams = {
+            'pid_rate.pitch_kp': 90.0,
+            'pid_rate.pitch_kd': 0.0,
+            'pid_rate.pitch_ki': 15.0,
+            'pid_rate.roll_kp': 100.0,
+            'pid_rate.roll_kd': 0.0,
+            'pid_rate.roll_ki': 15.0,
+            'pid_rate.yaw_kp': 50.0,
+            'pid_rate.yaw_kd': 23.0,
+            'pid_rate.yaw_ki': 2.0,
+            'pid_attitude.pitch_kp': 3.5,
+            'pid_attitude.pitch_kd': 2.0,
+            'pid_attitude.pitch_ki': 0.0,
+            'pid_attitude.roll_kp': 3.5,
+            'pid_attitude.roll_kd': 2.0,
+            'pid_attitude.roll_ki': 0.0,
+            'pid_attitude.yaw_kp': 0.0,
+            'pid_attitude.yaw_kd': 0.0,
+            'pid_attitude.yaw_ki': 0.0,
+            'sensorfusion6.kp': 0.800000011921,
+            'sensorfusion6.ki': 0.00200000009499,
+            'imu_acc_lpf.factor': 32 }
+
