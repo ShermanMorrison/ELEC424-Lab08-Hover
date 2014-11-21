@@ -27,7 +27,8 @@ self.cfParams = {
     'sensorfusion6.ki': 0.00200000009499,
     'imu_acc_lpf.factor': 32 }
 Changes to Code:
-
+First, we had to find a way to get the roll-pitch-yaw, so we could compute an error measure. To do this we added a setter to aicontroller.py, which we called in FlightTab.py when imu data was received (in _imu_data_received()).
+We added logic in augmentInputwithAi() to try different values of the gains for a given number of trials, for each of roll, pitch, and yaw. We implemented pidTuner() to update the pid gains.
 
 Approach to tuning the PID:
 
