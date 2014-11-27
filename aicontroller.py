@@ -70,6 +70,10 @@ class AiController():
     """Used for reading data from input devices using the PyGame API."""
     def __init__(self,cf):
 
+        self.altHoldTarget = None
+        self.hoverRatio = None
+        self.hoverBaseThrust = None
+
         self.gainToChange = "pid_rate.roll_kp" 
         self.lastError = float("inf")
 	
@@ -202,9 +206,11 @@ class AiController():
         """
         if (self.setAltHold):
             print "first time on AltHold!"
-            altHoldTarget = self.barometer
+            self.altHoldTarget = self.barometer
         else:
-            pass
+            err = self.altHoldTarget - self.asl
+            thrustDelta = self.hoverBaseThrust + self.hoverRatio * err
+            self.addThrust(thrustDelta)
 
         """
             altHoldTarget = currentAltitude
