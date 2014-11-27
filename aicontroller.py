@@ -137,7 +137,6 @@ class AiController():
         # save this value.
         self.data["pitchcal"] = 0.0
         self.data["rollcal"] = 0.0
-        self.data["althold"] = False
         for e in pygame.event.get():
           if e.type == pygame.locals.JOYAXISMOTION:
             index = "Input.AXIS-%d" % e.axis 
@@ -164,6 +163,10 @@ class AiController():
                         # self.data["exit"] = True
                         self.data["exit"] = not self.data["exit"]
                         logger.info("Toggling AI %d", self.data["exit"])
+                    elif (key == "althold"):
+                        # self.data["althold"] = True
+                        self.data["althold"] = not self.data["althold"]
+                        logger.info("Toggling AI %d", self.data["althold"])
                     else: # Generic cal for pitch/roll
                         self.data[key] = self.inputMap[index]["scale"]
             except Exception:
@@ -174,12 +177,25 @@ class AiController():
         # ----------------------------------------------------------
         if self.data["exit"]:
             self.augmentInputWithAi()
+        if self.data["althold"]:
+            self.altHoldThrust()
+
+
 
         # Return control Data
         return self.data
 
 
-    # ELEC424 TODO:  Improve this function as needed
+    def altHoldThrust(self):
+        """
+        Overrides the throttle input to try to get the crazyflie to hover.
+        The first time the function is called, the hover height is set from current height
+        After this, this function will calculate corrections to keep the crazyflie at
+        This function imitates the altitude hold function within stabilizer.c
+        """
+        return
+
+
     def augmentInputWithAi(self):
         """
         Overrides the throttle input with a controlled takeoff, hover, and land loop.
