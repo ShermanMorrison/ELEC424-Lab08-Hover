@@ -363,3 +363,6 @@ class AiController():
 	self.actualPitch = actualPitch	
         self.actualThrust = actualThrust
 
+	def setAltholdData(self, alt):
+		self.alt = alt
+		print "alt = " + alt

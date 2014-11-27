@@ -208,6 +208,7 @@ class FlightTab(Tab, flight_tab_class):
     def _althold_data_received(self, timestamp, data, logconf):
         if self.isVisible():
             target = data["altHold.target"]
+            self.helper.inputDeviceReader.inputdevice.setAltholdData(target)
             if target>0:
                 if not self.targetASL.isEnabled():
                     self.targetASL.setEnabled(True) 
