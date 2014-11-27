@@ -390,7 +390,7 @@ class AiController():
 
     def setBaroData(self, barometer):
         self.barometer = barometer
-        print "barometer =" + str(self.barometer)
+        print "barometer = " + str(self.barometer)
 
     def setAltholdData(self, alt):
         self.alt = alt
