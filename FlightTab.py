@@ -207,6 +207,7 @@ class FlightTab(Tab, flight_tab_class):
         
     def _althold_data_received(self, timestamp, data, logconf):
         if self.isVisible():
+            print str(data)
             target = data["altHold.target"]
             self.helper.inputDeviceReader.inputdevice.setAltholdData(target)
             if target>0:

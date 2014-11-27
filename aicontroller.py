@@ -61,7 +61,7 @@ from pygame.locals import *
 
 import time
 import logging
-
+from cfclient.ui.widgets.ai import AttitudeIndicator
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class AiController():
 
         self.gainToChange = "pid_rate.roll_kp" 
         self.lastError = float("inf")
-	
+        self.ai = AttitudeIndicator()
 
         self.errorList = []
         self.kpList = []
@@ -82,7 +82,8 @@ class AiController():
         self.alt = None
         self.altHoldPrev = 0
         self.setAltHold = False
-        self.cf = cf 
+        self.cf = cf
+        self.asl = None 
         self.actualRoll = 0
         self.actualPitch = 0
         self.actualYaw = 0
@@ -178,6 +179,8 @@ class AiController():
 
         # Second if AI is enabled overwrite selected data with AI
         # ----------------------------------------------------------
+
+
         if self.data["exit"]:
             self.augmentInputWithAi()
         if self.data["althold"]:
@@ -343,8 +346,8 @@ class AiController():
     def start_input(self, deviceId, inputMap):
         """Initalize the reading and open the device with deviceId and set the mapping for axis/buttons using the
         inputMap"""
-        self.data = {"roll":0.0, "pitch":0.0, "yaw":0.0, "thrust":0.0, "pitchcal":0.0, "rollcal":0.0, "estop": False, "exit":False}
-        self.aiData = {"roll":0.0, "pitch":0.0, "yaw":0.0, "thrust":0.0, "pitchcal":0.0, "rollcal":0.0, "estop": False, "exit":False}
+        self.data = {"roll":0.0, "pitch":0.0, "yaw":0.0, "thrust":0.0, "pitchcal":0.0, "rollcal":0.0, "estop": False, "exit":False, "althold":False}
+        self.aiData = {"roll":0.0, "pitch":0.0, "yaw":0.0, "thrust":0.0, "pitchcal":0.0, "rollcal":0.0, "estop": False, "exit":False, "althold":False}
         self.inputMap = inputMap
         self.j = pygame.joystick.Joystick(deviceId)
         self.j.init()
@@ -390,12 +393,14 @@ class AiController():
         self.actualRoll = actualRoll
 	self.actualPitch = actualPitch	
         self.actualThrust = actualThrust
+        print "thrust = " + str(self.aiData["thrust"])
     
     def setBaroData(self, barometer):
         self.barometer = barometer
         print "barometer =" + str(self.barometer)
-        print "thrust = " + str(self.data["thrust"])
+
 
     def setAltholdData(self, alt):
         self.alt = alt
-        print "althold data = " + str(self.alt)
+        print "ASL = " + str(self.ai.hoverASL)
+
