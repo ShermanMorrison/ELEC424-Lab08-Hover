@@ -78,7 +78,8 @@ class AiController():
 	self.kpList = []
 	
 	self.bestRPY = []
-
+        self.barometer = None
+        self.alt = None
         self.cf = cf 
 	self.actualRoll = 0
 	self.actualPitch = 0
@@ -166,7 +167,7 @@ class AiController():
                     elif (key == "althold"):
                         # self.data["althold"] = True
                         self.data["althold"] = not self.data["althold"]
-                        logger.info("Toggling AI %d", self.data["althold"])
+                        logger.info("Toggling altHold %d", self.data["althold"])
                     else: # Generic cal for pitch/roll
                         self.data[key] = self.inputMap[index]["scale"]
             except Exception:
@@ -193,23 +194,24 @@ class AiController():
         After this, this function will calculate corrections to keep the crazyflie at
         This function imitates the altitude hold function within stabilizer.c
         """
-       if (setAltHold == 1):
-           altHoldTarget = currentAltitude
-           pre_integral = altHoldPID.integ;
-           pidInit(stuff); 
-           pid.integ = pre_integral
-           altHoldPIDVal = pidUpdate(stuff);
+        """
+        if (setAltHold == 1):
+            altHoldTarget = currentAltitude
+            pre_integral = altHoldPID.integ;
+            pidInit(stuff); 
+            pid.integ = pre_integral
+            altHoldPIDVal = pidUpdate(stuff);
 
-       if (altHold == 1):
-           altHoldPIDVal = pidAlpha *altHoldPIDVal+(1.0 - pidAlpha) *((vSpeedAcc*vSpeedAccFac) + (vSpeedASL * vSpeedASLFac) + pidUpdate(stuff))
-           thrust = max(altHoldMinThrust, min(altHoldMaxThrust, limitThrust( altHoldBaseThrust+ (altHoldPIDVal *pidAslFac))))
-       else:
-           altHoldTarget = 0
-           altHoldErr = 0
-           altHoldPIDVal = 0
+        if (altHold == 1):
+            altHoldPIDVal = pidAlpha *altHoldPIDVal+(1.0 - pidAlpha) *((vSpeedAcc*vSpeedAccFac) + (vSpeedASL * vSpeedASLFac) + pidUpdate(stuff))
+            thrust = max(altHoldMinThrust, min(altHoldMaxThrust, limitThrust( altHoldBaseThrust+ (altHoldPIDVal *pidAslFac))))
+        else:
+            altHoldTarget = 0
+            altHoldErr = 0
+            altHoldPIDVal = 0
+        """
 
-
-       return
+        return
 
 
     def augmentInputWithAi(self):
@@ -331,8 +333,8 @@ class AiController():
     def start_input(self, deviceId, inputMap):
         """Initalize the reading and open the device with deviceId and set the mapping for axis/buttons using the
         inputMap"""
-        self.data = {"roll":0.0, "pitch":0.0, "yaw":0.0, "thrust":0.0, "pitchcal":0.0, "rollcal":0.0, "estop": False, "exit":False}
-        self.aiData = {"roll":0.0, "pitch":0.0, "yaw":0.0, "thrust":0.0, "pitchcal":0.0, "rollcal":0.0, "estop": False, "exit":False}
+        self.data = {"roll":0.0, "pitch":0.0, "yaw":0.0, "thrust":0.0, "pitchcal":0.0, "rollcal":0.0, "estop": False, "exit":False, "althold":False}
+        self.aiData = {"roll":0.0, "pitch":0.0, "yaw":0.0, "thrust":0.0, "pitchcal":0.0, "rollcal":0.0, "estop": False, "exit":False, "althold":False}
         self.inputMap = inputMap
         self.j = pygame.joystick.Joystick(deviceId)
         self.j.init()
@@ -379,6 +381,10 @@ class AiController():
 	self.actualPitch = actualPitch	
         self.actualThrust = actualThrust
 
-	def setAltholdData(self, alt):
-		self.alt = alt
-		print "alt = " + alt
+    def setBaroData(self, barometer):
+        self.barometer = barometer
+        print "barometer =" + str(self.barometer)
+
+    def setAltholdData(self, alt):
+        self.alt = alt
+        print "alt = " + str(alt)
