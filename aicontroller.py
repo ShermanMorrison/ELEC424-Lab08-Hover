@@ -74,18 +74,18 @@ class AiController():
         self.lastError = float("inf")
 	
 
-	self.errorList = []
-	self.kpList = []
-	
-	self.bestRPY = []
+        self.errorList = []
+        self.kpList = []
+        
+        self.bestRPY = []
         self.barometer = None
         self.alt = None
         self.altHoldPrev = 0
         self.setAltHold = False
         self.cf = cf 
-	self.actualRoll = 0
-	self.actualPitch = 0
-	self.actualYaw = 0
+        self.actualRoll = 0
+        self.actualPitch = 0
+        self.actualYaw = 0
         self.error = 0
         self.inputMap = None
         pygame.init()
@@ -200,9 +200,12 @@ class AiController():
         After this, this function will calculate corrections to keep the crazyflie at
         This function imitates the altitude hold function within stabilizer.c
         """
-        
         if (self.setAltHold):
             print "first time on AltHold!"
+            altHoldTarget = self.barometer
+        else:
+            pass
+
         """
             altHoldTarget = currentAltitude
             pre_integral = altHoldPID.integ;
@@ -293,7 +296,7 @@ class AiController():
                     self.gainToChange = "pid_rate.yaw_kp"
 		else:
 		    print "best RPY = " + str(self.bestRPY)
-	    self.thrust = self.maxThrust + 0.02	
+	    self.maxThrust = self.maxThrust + 0.02
 	    self.error = 0
 		
         self.addThrust( thrustDelta )
@@ -340,8 +343,8 @@ class AiController():
     def start_input(self, deviceId, inputMap):
         """Initalize the reading and open the device with deviceId and set the mapping for axis/buttons using the
         inputMap"""
-        self.data = {"roll":0.0, "pitch":0.0, "yaw":0.0, "thrust":0.0, "pitchcal":0.0, "rollcal":0.0, "estop": False, "exit":False, "althold":False}
-        self.aiData = {"roll":0.0, "pitch":0.0, "yaw":0.0, "thrust":0.0, "pitchcal":0.0, "rollcal":0.0, "estop": False, "exit":False, "althold":False}
+        self.data = {"roll":0.0, "pitch":0.0, "yaw":0.0, "thrust":0.0, "pitchcal":0.0, "rollcal":0.0, "estop": False, "exit":False}
+        self.aiData = {"roll":0.0, "pitch":0.0, "yaw":0.0, "thrust":0.0, "pitchcal":0.0, "rollcal":0.0, "estop": False, "exit":False}
         self.inputMap = inputMap
         self.j = pygame.joystick.Joystick(deviceId)
         self.j.init()
@@ -387,10 +390,11 @@ class AiController():
         self.actualRoll = actualRoll
 	self.actualPitch = actualPitch	
         self.actualThrust = actualThrust
-
+    
     def setBaroData(self, barometer):
         self.barometer = barometer
-        print "barometer = " + str(self.barometer)
+        print "barometer =" + str(self.barometer)
+        print "thrust = " + str(self.data["thrust"])
 
     def setAltholdData(self, alt):
         self.alt = alt
