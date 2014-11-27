@@ -200,8 +200,10 @@ class FlightTab(Tab, flight_tab_class):
         
     def _baro_data_received(self, timestamp, data, logconf):
         if self.isVisible():
+            
             self.actualASL.setText(("%.2f" % data["baro.aslLong"]))
             self.ai.setBaro(data["baro.aslLong"])
+			self.helper.inputDeviceReader.inputdevice.setBaroData(data["baro.aslLong"])
         
     def _althold_data_received(self, timestamp, data, logconf):
         if self.isVisible():
