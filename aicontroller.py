@@ -193,7 +193,23 @@ class AiController():
         After this, this function will calculate corrections to keep the crazyflie at
         This function imitates the altitude hold function within stabilizer.c
         """
-        return
+       if (setAltHold == 1):
+           altHoldTarget = currentAltitude
+           pre_integral = altHoldPID.integ;
+           pidInit(stuff); 
+           pid.integ = pre_integral
+           altHoldPIDVal = pidUpdate(stuff);
+
+       if (altHold == 1):
+           altHoldPIDVal = pidAlpha *altHoldPIDVal+(1.0 - pidAlpha) *((vSpeedAcc*vSpeedAccFac) + (vSpeedASL * vSpeedASLFac) + pidUpdate(stuff))
+           thrust = max(altHoldMinThrust, min(altHoldMaxThrust, limitThrust( altHoldBaseThrust+ (altHoldPIDVal *pidAslFac))))
+       else:
+           altHoldTarget = 0
+           altHoldErr = 0
+           altHoldPIDVal = 0
+
+
+       return
 
 
     def augmentInputWithAi(self):
