@@ -70,16 +70,17 @@ class AiController():
     """Used for reading data from input devices using the PyGame API."""
     def __init__(self,cf):
 
-        self.gainToChange = "pid_rate.roll_kp"
+        self.gainToChange = "pid_rate.roll_kp" 
         self.lastError = float("inf")
-
+	
 
         self.errorList = []
         self.kpList = []
-
+        
         self.bestRPY = []
-
-        self.cf = cf
+        self.barometer = None
+        self.alt = None
+        self.cf = cf 
         self.actualRoll = 0
         self.actualPitch = 0
         self.actualYaw = 0
@@ -106,26 +107,26 @@ class AiController():
         # parameters pulled from json with defaults from crazyflie pid.h
         # perl -ne '/"(\w*)": {/ && print $1,  "\n" ' lib/cflib/cache/27A2C4BA.json
         self.cfParams = {
-            'pid_rate.pitch_kp': 90.0,
-            'pid_rate.pitch_kd': 0.0,
-            'pid_rate.pitch_ki': 15.0,
-            'pid_rate.roll_kp': 100.0,
-            'pid_rate.roll_kd': 0.0,
-            'pid_rate.roll_ki': 15.0,
-            'pid_rate.yaw_kp': 50.0,
-            'pid_rate.yaw_kd': 23.0,
-            'pid_rate.yaw_ki': 2.0,
-            'pid_attitude.pitch_kp': 3.5,
-            'pid_attitude.pitch_kd': 2.0,
-            'pid_attitude.pitch_ki': 0.0,
-            'pid_attitude.roll_kp': 3.5,
-            'pid_attitude.roll_kd': 2.0,
-            'pid_attitude.roll_ki': 0.0,
-            'pid_attitude.yaw_kp': 0.0,
-            'pid_attitude.yaw_kd': 0.0,
-            'pid_attitude.yaw_ki': 0.0,
-            'sensorfusion6.kp': 0.800000011921,
-            'sensorfusion6.ki': 0.00200000009499,
+            'pid_rate.pitch_kp': 90.0, 
+            'pid_rate.pitch_kd': 0.0, 
+            'pid_rate.pitch_ki': 15.0, 
+            'pid_rate.roll_kp': 100.0, 
+            'pid_rate.roll_kd': 0.0, 
+            'pid_rate.roll_ki': 15.0, 
+            'pid_rate.yaw_kp': 50.0, 
+            'pid_rate.yaw_kd': 23.0, 
+            'pid_rate.yaw_ki': 2.0, 
+            'pid_attitude.pitch_kp': 3.5, 
+            'pid_attitude.pitch_kd': 2.0, 
+            'pid_attitude.pitch_ki': 0.0, 
+            'pid_attitude.roll_kp': 3.5, 
+            'pid_attitude.roll_kd': 2.0, 
+            'pid_attitude.roll_ki': 0.0, 
+            'pid_attitude.yaw_kp': 0.0, 
+            'pid_attitude.yaw_kd': 0.0, 
+            'pid_attitude.yaw_ki': 0.0, 
+            'sensorfusion6.kp': 0.800000011921, 
+            'sensorfusion6.ki': 0.00200000009499, 
             'imu_acc_lpf.factor': 32 }
 
     def read_input(self):
@@ -138,40 +139,40 @@ class AiController():
         self.data["pitchcal"] = 0.0
         self.data["rollcal"] = 0.0
         for e in pygame.event.get():
-            if e.type == pygame.locals.JOYAXISMOTION:
-                index = "Input.AXIS-%d" % e.axis
-                try:
-                    if (self.inputMap[index]["type"] == "Input.AXIS"):
-                        key = self.inputMap[index]["key"]
-                        axisvalue = self.j.get_axis(e.axis)
-                        # All axis are in the range [-a,+a]
-                        axisvalue = axisvalue * self.inputMap[index]["scale"]
-                        # The value is now in the correct direction and in the range [-1,1]
-                        self.data[key] = axisvalue
-                except Exception:
-                    # Axis not mapped, ignore..
-                    pass
+          if e.type == pygame.locals.JOYAXISMOTION:
+            index = "Input.AXIS-%d" % e.axis 
+            try:
+                if (self.inputMap[index]["type"] == "Input.AXIS"):
+                    key = self.inputMap[index]["key"]
+                    axisvalue = self.j.get_axis(e.axis)
+                    # All axis are in the range [-a,+a]
+                    axisvalue = axisvalue * self.inputMap[index]["scale"]
+                    # The value is now in the correct direction and in the range [-1,1]
+                    self.data[key] = axisvalue
+            except Exception:
+                # Axis not mapped, ignore..
+                pass          
 
-            if e.type == pygame.locals.JOYBUTTONDOWN:
-                index = "Input.BUTTON-%d" % e.button
-                try:
-                    if (self.inputMap[index]["type"] == "Input.BUTTON"):
-                        key = self.inputMap[index]["key"]
-                        if (key == "estop"):
-                            self.data["estop"] = not self.data["estop"]
-                        elif (key == "exit"):
-                            # self.data["exit"] = True
-                            self.data["exit"] = not self.data["exit"]
-                            logger.info("Toggling AI %d", self.data["exit"])
-                        elif (key == "althold"):
-                            # self.data["althold"] = True
-                            self.data["althold"] = not self.data["althold"]
-                            logger.info("Toggling AI %d", self.data["althold"])
-                        else: # Generic cal for pitch/roll
-                            self.data[key] = self.inputMap[index]["scale"]
-                except Exception:
-                    # Button not mapped, ignore..
-                    pass
+          if e.type == pygame.locals.JOYBUTTONDOWN:
+            index = "Input.BUTTON-%d" % e.button 
+            try:
+                if (self.inputMap[index]["type"] == "Input.BUTTON"):
+                    key = self.inputMap[index]["key"]
+                    if (key == "estop"):
+                        self.data["estop"] = not self.data["estop"]
+                    elif (key == "exit"):
+                        # self.data["exit"] = True
+                        self.data["exit"] = not self.data["exit"]
+                        logger.info("Toggling AI %d", self.data["exit"])
+                    elif (key == "althold"):
+                        # self.data["althold"] = True
+                        self.data["althold"] = not self.data["althold"]
+                        logger.info("Toggling altHold %d", self.data["althold"])
+                    else: # Generic cal for pitch/roll
+                        self.data[key] = self.inputMap[index]["scale"]
+            except Exception:
+                # Button not mapped, ignore..
+                pass
 
         # Second if AI is enabled overwrite selected data with AI
         # ----------------------------------------------------------
@@ -209,20 +210,20 @@ class AiController():
         timeSinceLastAi = currentTime - self.lastTime
         self.timer1 = self.timer1 + timeSinceLastAi
         self.lastTime = currentTime
-
+        
         # Take measurements of error every time this function is called
 
         # total error will sum deviation in roll, pitch, and yaw    
-
-
+        
+       	 
         self.error += self.actualRoll * self.actualRoll + self.actualPitch * self.actualPitch + self.actualYaw * self.actualYaw
 
 
         # Basic AutoPilot steadly increase thrust, hover, land and repeat
         # -------------------------------------------------------------
+       
 
-
-
+        
         # delay before takeoff 
         if self.timer1 < 0:
             thrustDelta = 0
@@ -230,7 +231,7 @@ class AiController():
         elif self.timer1 < self.takeoffTime :
             thrustDelta = self.thrustInc
         # hold
-        elif self.timer1 < self.takeoffTime + self.hoverTime :
+        elif self.timer1 < self.takeoffTime + self.hoverTime : 
             thrustDelta = 0
         # land
         elif self.timer1 < 2 * self.takeoffTime + self.hoverTime :
@@ -242,37 +243,37 @@ class AiController():
             # Example Call to pidTuner
             print "Magnitude of error was: "+str(self.error)
             print "\t with " + self.gainToChange + " = " + str(self.cfParams[self.gainToChange])
-            #
-            if len(self.errorList) < 7:
+	    # 
+	    if len(self.errorList) < 7:
                 self.pidTuner() # update self.gainToChange param
-                self.errorList.append(self.error)
-                self.kpList.append(self.cfParams[self.gainToChange])
-                self.lastError = self.error
-            else:
-                indexOfMin = 0
-                lowestErr = self.errorList[0]
-                for i in xrange(1,len(self.errorList)):
-                    if self.errorList[i] < lowestErr:
+	        self.errorList.append(self.error)
+		self.kpList.append(self.cfParams[self.gainToChange])
+	        self.lastError = self.error
+	    else:
+		indexOfMin = 0
+		lowestErr = self.errorList[0]
+		for i in xrange(1,len(self.errorList)):
+		    if self.errorList[i] < lowestErr:
                         indexOfMin = i
-                        lowestErr = self.errorList[i]
+			lowestErr = self.errorList[i]
 
-                self.cfParams[self.gainToChange] = self.kpList[indexOfMin]
-                self.updateCrazyFlieParam(self.gainToChange)
-                self.bestRPY.append(self.kpList[indexOfMin])
-                print "BEST Kp for " + str(self.gainToChange) + " = " + str(self.kpList[indexOfMin])
+		self.cfParams[self.gainToChange] = self.kpList[indexOfMin]
+		self.updateCrazyFlieParam(self.gainToChange)	
+		self.bestRPY.append(self.kpList[indexOfMin])
+		print "BEST Kp for " + str(self.gainToChange) + " = " + str(self.kpList[indexOfMin])
 
-                self.errorList = []
+		self.errorList = []
                 if self.gainToChange == "pid_rate.pitch_kp":
                     self.gainToChange = "pid_rate.roll_kp"
                 elif self.gainToChange == "pid_rate.roll_kp":
                     self.gainToChange = "pid_rate.yaw_kp"
-                else:
-                    print "best RPY = " + str(self.bestRPY)
-            self.thrust = self.maxThrust + 0.02
-            self.error = 0
-
+		else:
+		    print "best RPY = " + str(self.bestRPY)
+	    self.thrust = self.maxThrust + 0.02	
+	    self.error = 0
+		
         self.addThrust( thrustDelta )
-
+        
         # override Other inputs as needed
         # --------------------------------------------------------------
         # self.data["roll"] = self.aiData["roll"]
@@ -285,14 +286,14 @@ class AiController():
 
     def addThrust(self, thrustDelta):
         # Increment thrust
-        self.aiData["thrust"] = self.aiData["thrust"] + thrustDelta
+        self.aiData["thrust"] = self.aiData["thrust"] + thrustDelta 
         # Check for max
         if self.aiData["thrust"] > self.maxThrust:
             self.aiData["thrust"] = self.maxThrust
         # check for min 
         elif self.aiData["thrust"] < 0:
             self.aiData["thrust"] = 0
-
+        
         # overwrite joystick thrust values
         self.data["thrust"] = self.aiData["thrust"]
 
@@ -301,7 +302,7 @@ class AiController():
     def pidTuner(self):
         """ 
         iterates through a parameter, adjusting every time and printing out error
-        """
+        """      
         self.cfParams[self.gainToChange] = self.cfParams[self.gainToChange] + 10
         self.updateCrazyFlieParam(self.gainToChange)
 
@@ -360,10 +361,13 @@ class AiController():
 
     def setActualData(self, actualRoll, actualPitch, actualThrust):
         self.actualRoll = actualRoll
-        self.actualPitch = actualPitch
+	self.actualPitch = actualPitch	
         self.actualThrust = actualThrust
+    
+    def setBaroData(self, barometer):
+        self.barometer = barometer
+        print "barometer =" + str(self.barometer)
 
-
-    def setAltholdData(self, alt):
-        self.alt = alt
-        print "alt = " + alt
+	def setAltholdData(self, alt):
+		self.alt = alt
+		print "alt = " + alt
