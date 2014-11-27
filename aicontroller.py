@@ -394,4 +394,4 @@ class AiController():
 
     def setAltholdData(self, alt):
         self.alt = alt
-        print "alt = " + str(alt)
+        print "althold data = " + str(self.alt)
