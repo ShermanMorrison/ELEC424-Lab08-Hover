@@ -80,6 +80,8 @@ class AiController():
 	self.bestRPY = []
         self.barometer = None
         self.alt = None
+        self.altHoldPrev = 0
+        self.setAltHold = False
         self.cf = cf 
 	self.actualRoll = 0
 	self.actualPitch = 0
@@ -179,8 +181,12 @@ class AiController():
         if self.data["exit"]:
             self.augmentInputWithAi()
         if self.data["althold"]:
+            self.AltHoldPrev += 1
+            if self.AltHoldPrev == 1:
+                self.setAltHold = True
             self.altHoldThrust()
-
+        else:
+            self.AltHoldPrev = 0
 
 
         # Return control Data
@@ -194,14 +200,15 @@ class AiController():
         After this, this function will calculate corrections to keep the crazyflie at
         This function imitates the altitude hold function within stabilizer.c
         """
+        
+        if (self.setAltHold):
+            print "first time on AltHold!"
         """
-        if (setAltHold == 1):
             altHoldTarget = currentAltitude
             pre_integral = altHoldPID.integ;
             pidInit(stuff); 
             pid.integ = pre_integral
             altHoldPIDVal = pidUpdate(stuff);
-
         if (altHold == 1):
             altHoldPIDVal = pidAlpha *altHoldPIDVal+(1.0 - pidAlpha) *((vSpeedAcc*vSpeedAccFac) + (vSpeedASL * vSpeedASLFac) + pidUpdate(stuff))
             thrust = max(altHoldMinThrust, min(altHoldMaxThrust, limitThrust( altHoldBaseThrust+ (altHoldPIDVal *pidAslFac))))
@@ -210,7 +217,7 @@ class AiController():
             altHoldErr = 0
             altHoldPIDVal = 0
         """
-
+        self.setAltHold = False
         return
 
 
