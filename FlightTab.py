@@ -203,11 +203,11 @@ class FlightTab(Tab, flight_tab_class):
             
             self.actualASL.setText(("%.2f" % data["baro.aslLong"]))
             self.ai.setBaro(data["baro.aslLong"])
+            # We added this function to pull barometer data in order to do proportional control
             self.helper.inputDeviceReader.inputdevice.setBaroData(data["baro.aslLong"])
         
     def _althold_data_received(self, timestamp, data, logconf):
         if self.isVisible():
-            print str(data)
             target = data["altHold.target"]
             self.helper.inputDeviceReader.inputdevice.setAltholdData(target)
             if target>0:

@@ -1,45 +1,44 @@
-Lab07: PID tuning
-Jonathan Wilson, Chase Stewart
+Lab08: Hover
+Chase E Stewart, Jonathan Wilson
 
 
-Final PID values:
+___Approach___
+Final Method
+    Our final implementation of hover used a P controller based on the error of the barometer. Due to the change in battery strength, we decided that adding an integral correction would not be useful, because the steady-state error of thrust decreases (becomes weaker) as the battery discharges. Additionally,  in the last lab we found the derivative error was weird at best and certainly not helpful, so we discarded it for this lab. When the althold mode is enabled via the althold button (L2 for us), we sample the barometer immediately, providing a reference value for the automatic pilot (we found the barometer was steady enough for our proportional loop). After this, a loop controller provides proportional feedback based on the error (here defined as the difference between the first-sampled value and the current barometer reading) in order to correct. The function is implemented in AIcontroller in accordance with the ELEC424 assignment page. We opted to not allow the hover mode to be controllable in the althold mode (the assignment mentioned this was optional) in preparation for the competition next week.
 
-self.cfParams = {
-    'pid_rate.pitch_kp': 90.0,
-    'pid_rate.pitch_kd': 0.0,
-    'pid_rate.pitch_ki': 15.0,
-    'pid_rate.roll_kp': 100.0,
-    'pid_rate.roll_kd': 0.0,
-    'pid_rate.roll_ki': 15.0,
-    'pid_rate.yaw_kp': 50.0,
-    'pid_rate.yaw_kd': 23.0,
-    'pid_rate.yaw_ki': 2.0,
-    'pid_attitude.pitch_kp': 3.5,
-    'pid_attitude.pitch_kd': 2.0,
-    'pid_attitude.pitch_ki': 0.0,
-    'pid_attitude.roll_kp': 3.5,
-    'pid_attitude.roll_kd': 2.0,
-    'pid_attitude.roll_ki': 0.0,
-    'pid_attitude.yaw_kp': 0.0,
-    'pid_attitude.yaw_kd': 0.0,
-    'pid_attitude.yaw_ki': 0.0,
-    'sensorfusion6.kp': 0.800000011921,
-    'sensorfusion6.ki': 0.00200000009499,
-    'imu_acc_lpf.factor': 32 }
+Attempts
+    We also tried using the ASL data as input, but we found that the frequency at which it updated was too slow to usefully correct the thrust. As stated above, we found that adding an integral correction would not be useful, because the steady-state error of thrust decreases (becomes weaker) as the battery discharges. At first, we thought to do PID control and to do some sort of sensor fusion ourselves, but it turned out that the barometer was accurate enough for our tastes, and as we described above, the I and D portions were not extremely helpful. We managed to break our crazyflie's propellor  on a flight that went up and up and up, causing us to write code that sets a maximum allowable height before forcing the crazyflie down (a very good fix for us).
 
-Changes to Code:
-First, we had to find a way to get the roll-pitch-yaw, so we could compute an error measure. To do this we added a setter to aicontroller.py, which we called in FlightTab.py when imu data was received (in _imu_data_received()).
-We added logic in augmentInputwithAi() to try different values of the gains for a given number of trials, for each of roll, pitch, and yaw. We implemented pidTuner() to update the pid gains.
+___Source Files Modified___
 
-Approach to tuning the PID:
+FlightTab.py:
+    Added a setter method to set the barometer value in aicontroller.py, 
+similar to the ones that set the roll, pitch, and yaw from the last lab.
+    Also added a setter for the ASL data, but this is deprecated now as we did not like the results of testing with this data as much.
 
-We started with pitch_kp at 50, roll_kp at 60, yaw_kp at 70, and all ki and kd gains at 0. We then determined the pitch_kp that gave the minimum error, holding the other gains constant. We repeated this process for roll_kp and yaw_kp, using the optimal kp's already calculated.
-To set the ki and kd, we did some <CHASE MAGIC>.
+aicontroller.py:
+    Added a getter method to get barometer value.
+    Added a handler and control logic for the pressing of the althold button, so that it will call the function when althold is toggled on, and will enable the first-time flag the first time read input comes through and althold is enabled (the first-time flag is then disabled as soon as althold is toggled off)
+    Wrote altHoldThrust to proportionally control thrust- this is the heart of the althold function. It implements proportional control and runs instead of the other thrust function "augmentInputWithAi" when BOTH AI and altHold are enabled (althold is a sub-state of aicontroller). This function sets the thrust delta for the crazyflie based on a simple proportional loop control; the formula is:
 
-<What interface does the controller signal use to determine motor thrust?>
 
-commander.h : set in commanderGetThrust(uint16_t* thrust);
+    error = altHoldTarget - barometer_reading
+    thrustDelta = hoverBaseThrust + hoverRatio * error
+    self.addThrust(thrustDelta)
 
-Jonathan Wilson: 50%
-Chase E. Stewart: 50%
+where hoverBaseThrust and hoverRatio are constants- ratio is the tightness of correction and baseThrust is roughly the amount of thrust to hold the crazyflie in place
 
+and where altHoldTarget is the value of the barometer when the mode is fist started.
+
+
+
+___Sensors Used___
+
+    Barometer - P control based on barometer's ADC values which are linear w.r.t. height according to datasheet (ADC value based on pressure in millibars).
+    Accelerometer - used for PID control in yaw, pitch, roll, fused with gyroscope for accuracy
+    Gyroscope - used for PID control in yaw, pitch, roll, fused with accelerometer for accuracy
+            
+___Contribution___
+
+Jonathan Wilson - 50%
+Chase E. Stewart - 50%

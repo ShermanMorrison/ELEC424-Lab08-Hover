@@ -70,34 +70,45 @@ class AiController():
     """Used for reading data from input devices using the PyGame API."""
     def __init__(self,cf):
 
-        self.altHoldTarget = None
-        self.hoverRatio = None
-        self.hoverBaseThrust = None
+        self.cf = cf
+        
+
 
         self.gainToChange = "pid_rate.roll_kp" 
         self.lastError = float("inf")
-        self.ai = AttitudeIndicator()
 
         self.errorList = []
         self.kpList = []
         
-        self.bestRPY = []
-        self.barometer = None
-        self.alt = None
+        self.error = 0
+        
+        self.barometer = 0
+
         self.altHoldPrev = 0
         self.setAltHold = False
-        self.cf = cf
+
         self.asl = None 
+        
+        self.altHoldTarget = 0
+        self.hoverRatio = .02
+        self.hoverBaseThrust = .85
+       
+        # Crazyflie orientation variables
         self.actualRoll = 0
         self.actualPitch = 0
         self.actualYaw = 0
-        self.error = 0
+        
+        self.bestRPY = []
+        
         self.inputMap = None
         pygame.init()
 
         # AI variables
         self.timer1 = 0
         self.lastTime = 0
+
+        # DEPRECATED
+        self.alt = None
 
         # ---AI tuning variables---
         # This is the thrust of the motors duing hover.  0.5 reaches ~1ft depending on battery
@@ -185,8 +196,6 @@ class AiController():
         # ----------------------------------------------------------
 
 
-        if self.data["exit"]:
-            self.augmentInputWithAi()
         if self.data["althold"]:
             self.AltHoldPrev += 1
             if self.AltHoldPrev == 1:
@@ -194,7 +203,8 @@ class AiController():
             self.altHoldThrust()
         else:
             self.AltHoldPrev = 0
-
+            if self.data["exit"]:
+                self.augmentInputWithAi()
 
         # Return control Data
         return self.data
@@ -207,31 +217,23 @@ class AiController():
         After this, this function will calculate corrections to keep the crazyflie at
         This function imitates the altitude hold function within stabilizer.c
         """
+        # the first time in a sequence that altHold is called, the set point is calibrated
+        # by sampling the instantaneous barometer reading
         if (self.setAltHold):
             print "first time on AltHold!"
             self.altHoldTarget = self.barometer
-        else:
-            err = self.altHoldTarget - self.asl
-            thrustDelta = self.hoverBaseThrust + self.hoverRatio * err
-            self.addThrust(thrustDelta)
 
-        """
-            altHoldTarget = currentAltitude
-            pre_integral = altHoldPID.integ;
-            pidInit(stuff); 
-            pid.integ = pre_integral
-            altHoldPIDVal = pidUpdate(stuff);
-        if (altHold == 1):
-            altHoldPIDVal = pidAlpha *altHoldPIDVal+(1.0 - pidAlpha) *((vSpeedAcc*vSpeedAccFac) + (vSpeedASL * vSpeedASLFac) + pidUpdate(stuff))
-            thrust = max(altHoldMinThrust, min(altHoldMaxThrust, limitThrust( altHoldBaseThrust+ (altHoldPIDVal *pidAslFac))))
+        # after this point, the error is calculated and corrected using a proportional control loop
         else:
-            altHoldTarget = 0
-            altHoldErr = 0
-            altHoldPIDVal = 0
-        """
+            if self.barometer > self.altHoldTarget + 1.5:
+		self.addThrust(-.1)
+		print "too high, baro = " + str(self.barometer)
+            else:
+                err = self.altHoldTarget - self.barometer
+                thrustDelta = self.hoverBaseThrust + self.hoverRatio * err
+                self.addThrust(thrustDelta)
+
         self.setAltHold = False
-        return
-
 
     def augmentInputWithAi(self):
         """
@@ -257,7 +259,6 @@ class AiController():
 
         # Basic AutoPilot steadly increase thrust, hover, land and repeat
         # -------------------------------------------------------------
-       
 
         
         # delay before takeoff 
@@ -272,32 +273,35 @@ class AiController():
         # land
         elif self.timer1 < 2 * self.takeoffTime + self.hoverTime :
             thrustDelta = self.thrustDec
-        # repeat
+        # repeat and do PID testing  if necessary
         else:
             self.timer1 = -self.repeatDelay
             thrustDelta = 0
-            # Example Call to pidTuner
             print "Magnitude of error was: "+str(self.error)
             print "\t with " + self.gainToChange + " = " + str(self.cfParams[self.gainToChange])
-	    # 
+	    
+            # after seven tries, the code will select the best PID value and apply it for this run 
 	    if len(self.errorList) < 7:
                 self.pidTuner() # update self.gainToChange param
 	        self.errorList.append(self.error)
 		self.kpList.append(self.cfParams[self.gainToChange])
 	        self.lastError = self.error
-	    else:
+	   
+            # if less than seven tries, keep track of the run with least integral error 
+            else:
 		indexOfMin = 0
 		lowestErr = self.errorList[0]
 		for i in xrange(1,len(self.errorList)):
 		    if self.errorList[i] < lowestErr:
                         indexOfMin = i
 			lowestErr = self.errorList[i]
-
+                # set new PID value and print best value (best = least error)
 		self.cfParams[self.gainToChange] = self.kpList[indexOfMin]
 		self.updateCrazyFlieParam(self.gainToChange)	
 		self.bestRPY.append(self.kpList[indexOfMin])
 		print "BEST Kp for " + str(self.gainToChange) + " = " + str(self.kpList[indexOfMin])
 
+                # continue to next axis and test to run (currently hardcoded)
 		self.errorList = []
                 if self.gainToChange == "pid_rate.pitch_kp":
                     self.gainToChange = "pid_rate.roll_kp"
@@ -305,20 +309,13 @@ class AiController():
                     self.gainToChange = "pid_rate.yaw_kp"
 		else:
 		    print "best RPY = " + str(self.bestRPY)
+	
+            # this slightly increases maxThrust to compensate for battery reduction
 	    self.maxThrust = self.maxThrust + 0.02
 	    self.error = 0
 		
         self.addThrust( thrustDelta )
         
-        # override Other inputs as needed
-        # --------------------------------------------------------------
-        # self.data["roll"] = self.aiData["roll"]
-        # self.data["pitch"] = self.aiData["pitch"]
-        # self.data["yaw"] = self.aiData["yaw"]
-        # self.data["pitchcal"] = self.aiData["pitchcal"]
-        # self.data["rollcal"] = self.aiData["rollcal"]
-        # self.data["estop"] = self.aiData["estop"]
-        # self.data["exit"] = self.aiData["exit"]
 
     def addThrust(self, thrustDelta):
         # Increment thrust
@@ -334,7 +331,6 @@ class AiController():
         self.data["thrust"] = self.aiData["thrust"]
 
 
-    # ELEC424 TODO: Implement this function
     def pidTuner(self):
         """ 
         iterates through a parameter, adjusting every time and printing out error
@@ -396,17 +392,16 @@ class AiController():
         return dev
 
     def setActualData(self, actualRoll, actualPitch, actualThrust):
+        """ collects roll, pitch, and thrust data for use in calibrating PID  """
         self.actualRoll = actualRoll
 	self.actualPitch = actualPitch	
         self.actualThrust = actualThrust
-        print "thrust = " + str(self.aiData["thrust"])
     
     def setBaroData(self, barometer):
+        """ collects barometer data in order to implement height control"""
         self.barometer = barometer
-        print "barometer =" + str(self.barometer)
-
 
     def setAltholdData(self, alt):
+        """ DEPRECATED, ignore this, just part of the process"""
         self.alt = alt
-        print "ASL = " + str(self.ai.hoverASL)
 
