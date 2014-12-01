@@ -1,6 +1,12 @@
 Lab08: Hover
 Chase E Stewart, Jonathan Wilson
 
+___Implementation___
+To implement, just copy FlightControlTab over the current FlightControlTab in crazyflie-clients-python/lib/cfclient/ui/tabs/
+then copy aicontroller into crazyflie-clients-python/lib/cfclient/utils/
+
+finally follow the instructions in aicontroller for swapping the pygame controller for the aicontroller and voila! Email us if you have further questions at ces7@rice.edu
+
 
 ___Approach___
 Final Method
